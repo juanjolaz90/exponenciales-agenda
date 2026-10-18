@@ -1,0 +1,70 @@
+@import "tailwindcss";
+
+/* Marca Exponenciales: ver BRAND.md en Exponenciales REC */
+@theme {
+  --color-bg: #0b0a10;
+  --color-surface: #121019;
+  --color-surface-2: #1a1724;
+  --color-line: #2a2633;
+  --color-ink: #f2f0eb;
+  --color-muted: #a9a5b3;
+  --color-dim: #77737f;
+  --color-accent: #f43a59;
+  --color-on-accent: #0b0a10;
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+}
+
+:root {
+  color-scheme: dark;
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+}
+
+::selection {
+  background: color-mix(in srgb, var(--color-accent) 40%, transparent);
+}
+
+@utility btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 0.5rem;
+  padding: 0.625rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  transition: all 150ms;
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.4;
+  }
+}
+
+@utility btn-primary {
+  @apply btn bg-accent text-on-accent hover:brightness-110 active:brightness-95;
+}
+
+@utility btn-ghost {
+  @apply btn border border-line text-ink hover:bg-surface-2;
+}
+
+@utility field {
+  @apply w-full rounded-lg border border-line bg-bg px-3 py-2.5 text-sm text-ink outline-none transition placeholder:text-dim focus:border-accent focus:ring-2 focus:ring-accent/25;
+}
+
+@utility label {
+  @apply mb-1.5 block text-xs font-medium text-muted;
+}
+
+@utility eyebrow {
+  @apply font-mono text-[11px] uppercase tracking-[0.14em] text-dim;
+}
+
+@utility card {
+  @apply rounded-2xl border border-line bg-surface;
+}
