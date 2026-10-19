@@ -179,7 +179,7 @@ export function BookingWidget({ meeting }: { meeting: PublicMeeting }) {
                 </select>
               </label>
 
-              <div className="mt-4 max-h-[420px] overflow-y-auto pr-1">
+              <div className="mt-4 max-h-[408px] overflow-y-auto pr-1 [scrollbar-width:thin]">
                 {error && <p className="text-sm text-accent">{error}</p>}
                 {loading && !error && (
                   <div className="grid grid-cols-2 gap-2">
@@ -197,7 +197,7 @@ export function BookingWidget({ meeting }: { meeting: PublicMeeting }) {
                             key={s}
                             type="button"
                             onClick={() => selectSlot(s)}
-                            className="rounded-lg border border-line py-2.5 font-mono text-sm transition hover:border-[color:var(--accent)] hover:text-[color:var(--accent)]"
+                            className="h-11 rounded-lg border border-line font-mono text-sm transition last:odd:col-span-2 hover:border-[color:var(--accent)] hover:text-[color:var(--accent)]"
                           >
                             {DateTime.fromMillis(s, { zone: tz }).toFormat("HH:mm")}
                           </button>
@@ -215,6 +215,8 @@ export function BookingWidget({ meeting }: { meeting: PublicMeeting }) {
                     )}
                   </>
                 )}
+                {/* Degradado que indica que hay más horas al hacer scroll */}
+                <div className="pointer-events-none sticky bottom-0 h-6 bg-gradient-to-t from-surface to-transparent" />
               </div>
             </>
           ) : (
