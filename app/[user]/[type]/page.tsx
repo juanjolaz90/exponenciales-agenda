@@ -17,7 +17,7 @@ export default async function PublicBookingPage(props: PageProps<"/[user]/[type]
   const c = type.config;
 
   return (
-    <main className="flex flex-1 flex-col items-center px-4 py-8 sm:py-14">
+    <main className="flex flex-1 flex-col items-center px-4 py-6 sm:py-8">
       <BookingWidgetLoader
         meeting={{
           id: type.id,
@@ -34,7 +34,7 @@ export default async function PublicBookingPage(props: PageProps<"/[user]/[type]
           hostTimezone: c.timezone,
         }}
       />
-      <p className="mt-8 font-mono text-[11px] uppercase tracking-[0.14em] text-dim">Exponenciales · Agenda</p>
+      <p className="mt-5 font-mono text-[11px] uppercase tracking-[0.14em] text-dim">Exponenciales · Agenda</p>
     </main>
   );
 }

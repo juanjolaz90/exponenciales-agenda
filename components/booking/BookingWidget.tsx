@@ -86,9 +86,9 @@ export function BookingWidget({ meeting }: { meeting: PublicMeeting }) {
   return (
     <div className="w-full max-w-4xl" style={style}>
       <Steps step={step} />
-      <div className="card mt-6 grid overflow-hidden md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+      <div className="card mt-6 grid overflow-hidden md:h-[clamp(520px,calc(100dvh-11rem),720px)] md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
         {/* Columna izquierda: anfitrión + calendario */}
-        <div className="border-b border-line p-6 sm:p-8 md:border-r md:border-b-0">
+        <div className="min-h-0 border-b border-line p-6 sm:p-8 md:overflow-y-auto md:border-r md:border-b-0">
           <div className="flex items-center gap-3">
             {meeting.host.image ? (
               // eslint-disable-next-line @next/next/no-img-element
@@ -136,7 +136,7 @@ export function BookingWidget({ meeting }: { meeting: PublicMeeting }) {
         </div>
 
         {/* Columna derecha */}
-        <div className="p-6 sm:p-8">
+        <div className={`flex min-h-0 flex-col p-6 sm:p-8 ${step === 2 ? "md:overflow-y-auto" : ""}`}>
           {step === 1 ? (
             <>
               <h2 className="text-sm font-semibold">Ubicación de la reunión</h2>
@@ -181,7 +181,7 @@ export function BookingWidget({ meeting }: { meeting: PublicMeeting }) {
                 </select>
               </label>
 
-              <div className="mt-4 max-h-[440px] overflow-y-auto pr-1 [scrollbar-width:thin]">
+              <div className="mt-4 max-h-[440px] overflow-y-auto pr-1 [scrollbar-width:thin] md:max-h-none md:min-h-0 md:flex-1">
                 {error && <p className="text-sm text-accent">{error}</p>}
                 {loading && !error && (
                   <div className="grid gap-2">
