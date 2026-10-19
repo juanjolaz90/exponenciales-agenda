@@ -76,6 +76,12 @@ const settingsSchema = z.object({
     .max(40),
   timezone: z.string().refine(isValidTimeZone, "Zona horaria no válida"),
   calendarId: z.string().trim().min(1).max(200),
+  image: z
+    .string()
+    .trim()
+    .max(1000)
+    .refine((v) => v === "" || v.startsWith("https://"), "La foto debe ser una URL https://")
+    .transform((v) => v || null),
 });
 
 export async function saveSettings(_: ActionResult | null, form: FormData): Promise<ActionResult> {

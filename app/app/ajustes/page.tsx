@@ -17,7 +17,7 @@ export default async function SettingsPage() {
 
       <SettingsForm
         baseUrl={appUrl()}
-        initial={{ name: user.name, slug: user.slug, timezone: user.timezone, calendarId: user.calendarId }}
+        initial={{ name: user.name, slug: user.slug, timezone: user.timezone, calendarId: user.calendarId, image: user.image ?? "" }}
       />
 
       <section className="card space-y-4 p-6">

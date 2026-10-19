@@ -26,7 +26,7 @@ export default async function PublicProfile(props: PageProps<"/[user]">) {
       <div className="mt-10 flex items-center gap-4">
         {user.image ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={user.image} alt="" className="size-14 rounded-full" />
+          <img src={user.image} alt="" className="size-14 rounded-full object-cover" />
         ) : (
           <span className="grid size-14 place-items-center rounded-full bg-surface-2 text-xl font-semibold">{user.name[0]}</span>
         )}

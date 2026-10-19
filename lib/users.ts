@@ -49,7 +49,7 @@ export async function upsertUser(p: {
   const email = p.email.toLowerCase();
   const existing = await db.query.users.findFirst({ where: eq(users.email, email) });
   if (existing) {
-    const set: Partial<User> = { image: p.image ?? existing.image };
+    const set: Partial<User> = { image: existing.image ?? p.image ?? null };
     if (p.tokens?.googleAccessToken) set.googleAccessToken = p.tokens.googleAccessToken;
     if (p.tokens?.googleTokenExpiry) set.googleTokenExpiry = p.tokens.googleTokenExpiry;
     if (p.tokens?.googleRefreshToken) set.googleRefreshToken = p.tokens.googleRefreshToken;

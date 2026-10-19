@@ -88,7 +88,7 @@ export function BookingWidget({ meeting }: { meeting: PublicMeeting }) {
           <div className="flex items-center gap-3">
             {meeting.host.image ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={meeting.host.image} alt="" className="size-11 rounded-full" />
+              <img src={meeting.host.image} alt="" className="size-11 rounded-full object-cover" />
             ) : (
               <span className="grid size-11 place-items-center rounded-full bg-surface-2 font-semibold">{meeting.host.name[0]}</span>
             )}
@@ -96,10 +96,6 @@ export function BookingWidget({ meeting }: { meeting: PublicMeeting }) {
               <p className="text-sm text-muted">{meeting.host.name}</p>
               <h1 className="text-xl font-bold leading-tight tracking-tight">{meeting.title}</h1>
             </div>
-          </div>
-          <div className="mt-4 flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted">
-            <span>⏱ {fmtDuration(duration)}</span>
-            <span>◎ {LOCATION[meeting.location]}</span>
           </div>
           {meeting.description && <p className="mt-4 whitespace-pre-line text-sm text-muted">{meeting.description}</p>}
 
@@ -139,30 +135,32 @@ export function BookingWidget({ meeting }: { meeting: PublicMeeting }) {
         <div className="p-6 sm:p-8">
           {step === 1 ? (
             <>
-              {meeting.durations.length > 1 && (
-                <>
-                  <h2 className="text-sm font-semibold">¿Cuánto tiempo necesitas?</h2>
-                  <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4" role="radiogroup">
-                    {meeting.durations.map((d) => (
-                      <button
-                        key={d}
-                        role="radio"
-                        aria-checked={d === duration}
-                        type="button"
-                        onClick={() => setDuration(d)}
-                        className="rounded-lg border px-2 py-2 text-sm transition"
-                        style={
-                          d === duration
-                            ? { borderColor: meeting.accent, background: `${meeting.accent}1f`, color: "#F2F0EB" }
-                            : { borderColor: "#2a2633", color: "#A9A5B3" }
-                        }
-                      >
-                        {d < 60 ? `${d} min` : fmtDuration(d)}
-                      </button>
-                    ))}
-                  </div>
-                </>
-              )}
+              <h2 className="text-sm font-semibold">Ubicación de la reunión</h2>
+              <p className="mt-1.5 text-sm text-muted">◎ {LOCATION[meeting.location]}</p>
+
+              <h2 className="mt-6 text-sm font-semibold">Duración de la reunión</h2>
+              <div
+                className={`mt-3 grid gap-2 ${meeting.durations.length > 1 ? "grid-cols-2 sm:grid-cols-4" : "grid-cols-1"}`}
+                role="radiogroup"
+              >
+                {meeting.durations.map((d) => (
+                  <button
+                    key={d}
+                    role="radio"
+                    aria-checked={d === duration}
+                    type="button"
+                    onClick={() => setDuration(d)}
+                    className="rounded-lg border px-2 py-2 text-sm transition"
+                    style={
+                      d === duration
+                        ? { borderColor: meeting.accent, background: `${meeting.accent}1f`, color: "#F2F0EB" }
+                        : { borderColor: "#2a2633", color: "#A9A5B3" }
+                    }
+                  >
+                    {d < 60 ? `${d} min` : fmtDuration(d)}
+                  </button>
+                ))}
+              </div>
 
               <h2 className="mt-7 text-sm font-semibold">¿A qué hora te va bien?</h2>
               <p className="mt-1 text-sm text-muted">
@@ -179,25 +177,25 @@ export function BookingWidget({ meeting }: { meeting: PublicMeeting }) {
                 </select>
               </label>
 
-              <div className="mt-4 max-h-[408px] overflow-y-auto pr-1 [scrollbar-width:thin]">
+              <div className="mt-4 max-h-[440px] overflow-y-auto pr-1 [scrollbar-width:thin]">
                 {error && <p className="text-sm text-accent">{error}</p>}
                 {loading && !error && (
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid gap-2">
                     {Array.from({ length: 8 }).map((_, i) => (
-                      <div key={i} className="h-11 animate-pulse rounded-lg bg-surface-2" />
+                      <div key={i} className="h-12 animate-pulse rounded-lg bg-surface-2" />
                     ))}
                   </div>
                 )}
                 {!loading && !error && days && (
                   <>
                     {date && days[date] ? (
-                      <div className="grid grid-cols-2 gap-2">
+                      <div className="grid gap-2">
                         {days[date].map((s) => (
                           <button
                             key={s}
                             type="button"
                             onClick={() => selectSlot(s)}
-                            className="h-11 rounded-lg border border-line font-mono text-sm transition last:odd:col-span-2 hover:border-[color:var(--accent)] hover:text-[color:var(--accent)]"
+                            className="h-12 w-full rounded-lg border border-line font-mono text-sm transition hover:border-[color:var(--accent)] hover:text-[color:var(--accent)]"
                           >
                             {DateTime.fromMillis(s, { zone: tz }).toFormat("HH:mm")}
                           </button>

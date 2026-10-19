@@ -16,7 +16,7 @@ export default async function AdminLayout({ children }: LayoutProps<"/app">) {
           <div className="ml-auto flex items-center gap-3">
             {user.image ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={user.image} alt="" className="size-7 rounded-full" />
+              <img src={user.image} alt="" className="size-7 rounded-full object-cover" />
             ) : (
               <span className="grid size-7 place-items-center rounded-full bg-surface-2 text-xs font-semibold">
                 {user.name[0]}

@@ -3,7 +3,7 @@
 import { useActionState, useMemo } from "react";
 import { saveSettings } from "@/app/app/actions";
 
-type Initial = { name: string; slug: string; timezone: string; calendarId: string };
+type Initial = { name: string; slug: string; timezone: string; calendarId: string; image: string };
 
 export function SettingsForm({ initial, baseUrl }: { initial: Initial; baseUrl: string }) {
   const [state, action, pending] = useActionState(saveSettings, null);
@@ -35,6 +35,17 @@ export function SettingsForm({ initial, baseUrl }: { initial: Initial; baseUrl: 
           <span className="label">Calendario de Google</span>
           <input name="calendarId" defaultValue={initial.calendarId} className="field font-mono" />
           <span className="mt-1 block text-xs text-dim">«primary» = tu calendario principal.</span>
+        </label>
+        <label className="block sm:col-span-2">
+          <span className="label">Foto (URL de la imagen)</span>
+          <div className="flex items-center gap-3">
+            {initial.image ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={initial.image} alt="" className="size-10 shrink-0 rounded-full object-cover" />
+            ) : null}
+            <input name="image" type="url" defaultValue={initial.image} placeholder="https://…/foto.jpg" className="field" />
+          </div>
+          <span className="mt-1 block text-xs text-dim">La que verán tus clientes en las páginas de reserva. Vacío = foto de Google.</span>
         </label>
       </div>
       <div className="flex items-center justify-end gap-4">
