@@ -11,6 +11,8 @@ export const GOOGLE_SCOPES = [
   "profile",
   "https://www.googleapis.com/auth/calendar.events",
   "https://www.googleapis.com/auth/calendar.freebusy",
+  // Solo leer la lista de calendarios, para que un bloqueo en cualquiera de ellos quite la hora.
+  "https://www.googleapis.com/auth/calendar.calendarlist.readonly",
 ];
 
 export const googleConfigured = () =>
@@ -96,19 +98,56 @@ async function gcal(user: User, path: string, init: RequestInit = {}) {
   return res.status === 204 || res.status === 410 ? {} : res.json();
 }
 
+// Calendarios automáticos de Google que no representan ocupación real (bloquearían días enteros).
+const SYSTEM_CALENDAR = /#holiday@|#contacts@|#weeknum@|@group\.v\.calendar\.google\.com$/;
+
+export type CheckedCalendar = { id: string; name: string };
+
+/**
+ * Calendarios cuyo «ocupado» bloquea la agenda: todos los de la cuenta (principal, secundarios y
+ * compartidos), menos los automáticos. Si falta el permiso para listar calendarios (cuenta conectada
+ * antes de añadirlo), se usa solo el calendario configurado y `needsReconnect` lo indica.
+ */
+export async function calendarsToCheck(user: User): Promise<{ calendars: CheckedCalendar[]; needsReconnect: boolean }> {
+  const fallback = { calendars: [{ id: user.calendarId, name: "Calendario principal" }], needsReconnect: true };
+  if (user.calendarId !== "primary") return { calendars: [{ id: user.calendarId, name: user.calendarId }], needsReconnect: false };
+  let data: { items?: { id: string; summary?: string; summaryOverride?: string; primary?: boolean; deleted?: boolean; hidden?: boolean }[] } | null;
+  try {
+    data = await gcal(user, "/users/me/calendarList?minAccessRole=freeBusyReader&maxResults=250");
+  } catch (e) {
+    if (/Google Calendar 403/.test(String(e))) return fallback;
+    throw e;
+  }
+  if (!data) return { calendars: [], needsReconnect: false };
+  const calendars = (data.items ?? [])
+    .filter((c) => !c.deleted && !SYSTEM_CALENDAR.test(c.id))
+    .sort((a, b) => Number(Boolean(b.primary)) - Number(Boolean(a.primary)))
+    .slice(0, 50) // límite de freeBusy por petición
+    .map((c) => ({ id: c.primary ? "primary" : c.id, name: c.summaryOverride ?? c.summary ?? c.id }));
+  return { calendars, needsReconnect: false };
+}
+
 export async function busyTimes(user: User, from: number, to: number): Promise<Interval[]> {
+  if (!user.googleRefreshToken || !googleConfigured()) return [];
+  const { calendars } = await calendarsToCheck(user);
   const data = (await gcal(user, "/freeBusy", {
     method: "POST",
     body: JSON.stringify({
       timeMin: new Date(from).toISOString(),
       timeMax: new Date(to).toISOString(),
-      items: [{ id: user.calendarId }],
+      items: calendars.map((c) => ({ id: c.id })),
     }),
-  })) as { calendars?: Record<string, { busy?: { start: string; end: string }[] }> } | null;
+  })) as { calendars?: Record<string, { busy?: { start: string; end: string }[]; errors?: unknown[] }> } | null;
   if (!data) return [];
-  // Google puede responder 200 con errores por calendario (p. ej. calendario no encontrado).
-  const failed = Object.entries(data.calendars ?? {}).find(([, c]) => (c as { errors?: unknown[] }).errors?.length);
-  if (failed) throw new Error(`freeBusy ${failed[0]}: ${JSON.stringify((failed[1] as { errors?: unknown[] }).errors)}`);
+  // Google puede responder 200 con errores por calendario. Si falla el principal no sabemos nada fiable;
+  // si falla uno secundario (p. ej. un calendario compartido que ya no existe), se registra y se sigue.
+  for (const [id, c] of Object.entries(data.calendars ?? {})) {
+    if (!c.errors?.length) continue;
+    if (id === "primary" || id === user.email || id === user.calendarId) {
+      throw new Error(`freeBusy ${id}: ${JSON.stringify(c.errors)}`);
+    }
+    console.warn("[freeBusy] calendario ignorado", id, JSON.stringify(c.errors));
+  }
   return Object.values(data.calendars ?? {}).flatMap((c) =>
     (c.busy ?? []).map((b) => ({ start: Date.parse(b.start), end: Date.parse(b.end) })),
   );

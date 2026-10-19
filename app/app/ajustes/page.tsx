@@ -1,5 +1,5 @@
 import { requireUser } from "@/lib/session";
-import { appUrl, googleConfigured } from "@/lib/google";
+import { appUrl, calendarsToCheck, googleConfigured, type CheckedCalendar } from "@/lib/google";
 import { hubspotConfigured } from "@/lib/hubspot";
 import { SettingsForm } from "@/components/admin/SettingsForm";
 
@@ -8,6 +8,15 @@ export const metadata = { title: "Ajustes" };
 export default async function SettingsPage() {
   const user = await requireUser();
   const googleOk = googleConfigured() && Boolean(user.googleRefreshToken);
+  let checked: { calendars: CheckedCalendar[]; needsReconnect: boolean } | null = null;
+  let calendarError = false;
+  if (googleOk) {
+    try {
+      checked = await calendarsToCheck(user);
+    } catch {
+      calendarError = true;
+    }
+  }
   return (
     <div className="max-w-3xl space-y-6">
       <div>
@@ -37,6 +46,28 @@ export default async function SettingsPage() {
             <a href="/api/auth/google" className="btn-ghost px-3 py-1.5 text-xs">{googleOk ? "Reconectar" : "Conectar"}</a>
           ) : null}
         />
+        {googleOk && (
+          <div className="rounded-xl border border-line p-4">
+            <p className="text-sm font-medium">Calendarios que bloquean tu agenda</p>
+            {calendarError && (
+              <p className="mt-1 text-sm text-accent">Google no responde ahora mismo; revisa que la Google Calendar API esté activada.</p>
+            )}
+            {checked?.needsReconnect && (
+              <p className="mt-1 text-sm text-amber-300">
+                Solo se consulta el calendario principal. Pulsa «Reconectar» arriba para que bloquee cualquier calendario de tu cuenta.
+              </p>
+            )}
+            {checked && (
+              <ul className="mt-2 flex flex-wrap gap-1.5">
+                {checked.calendars.map((c) => (
+                  <li key={c.id} className="rounded-full bg-surface-2 px-2.5 py-1 text-xs text-muted">
+                    {c.name}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
         <Row
           title="HubSpot"
           ok={hubspotConfigured()}

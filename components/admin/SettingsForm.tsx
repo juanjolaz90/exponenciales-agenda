@@ -34,7 +34,7 @@ export function SettingsForm({ initial, baseUrl }: { initial: Initial; baseUrl: 
         <label className="block">
           <span className="label">Calendario de Google</span>
           <input name="calendarId" defaultValue={initial.calendarId} className="field font-mono" />
-          <span className="mt-1 block text-xs text-dim">«primary» = tu calendario principal.</span>
+          <span className="mt-1 block text-xs text-dim">«primary» = los eventos se crean en tu calendario principal y bloquea cualquier evento de todos tus calendarios.</span>
         </label>
         <label className="block sm:col-span-2">
           <span className="label">Foto (URL de la imagen)</span>
