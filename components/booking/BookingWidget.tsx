@@ -139,49 +139,59 @@ export function BookingWidget({ meeting }: { meeting: PublicMeeting }) {
         <div className={`flex min-h-0 flex-col p-6 sm:p-8 ${step === 2 ? "md:overflow-y-auto" : ""}`}>
           {step === 1 ? (
             <>
-              <h2 className="text-sm font-semibold">Ubicación de la reunión</h2>
-              <p className="mt-1.5 text-sm text-muted">◎ {LOCATION[meeting.location]}</p>
+              {/* Ubicación y duración en una fila: deja más sitio a la lista de horas */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <h2 className="text-sm font-semibold">Ubicación</h2>
+                  <p className="mt-1.5 text-sm text-muted">◎ {LOCATION[meeting.location]}</p>
+                </div>
+                <div>
+                  <h2 className="text-sm font-semibold">Duración</h2>
+                  {meeting.durations.length === 1 && (
+                    <p className="mt-1.5 text-sm text-muted">⏱ {fmtDuration(meeting.durations[0])}</p>
+                  )}
+                </div>
+              </div>
+              {meeting.durations.length > 1 && (
+                <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4" role="radiogroup" aria-label="Duración">
+                  {meeting.durations.map((d) => (
+                    <button
+                      key={d}
+                      role="radio"
+                      aria-checked={d === duration}
+                      type="button"
+                      onClick={() => setDuration(d)}
+                      className="rounded-lg border px-2 py-2 text-sm transition"
+                      style={
+                        d === duration
+                          ? { borderColor: meeting.accent, background: `${meeting.accent}1f`, color: "#F2F0EB" }
+                          : { borderColor: "#2a2633", color: "#A9A5B3" }
+                      }
+                    >
+                      {d < 60 ? `${d} min` : fmtDuration(d)}
+                    </button>
+                  ))}
+                </div>
+              )}
 
-              <h2 className="mt-6 text-sm font-semibold">Duración de la reunión</h2>
-              <div
-                className={`mt-3 grid gap-2 ${meeting.durations.length > 1 ? "grid-cols-2 sm:grid-cols-4" : "grid-cols-1"}`}
-                role="radiogroup"
-              >
-                {meeting.durations.map((d) => (
-                  <button
-                    key={d}
-                    role="radio"
-                    aria-checked={d === duration}
-                    type="button"
-                    onClick={() => setDuration(d)}
-                    className="rounded-lg border px-2 py-2 text-sm transition"
-                    style={
-                      d === duration
-                        ? { borderColor: meeting.accent, background: `${meeting.accent}1f`, color: "#F2F0EB" }
-                        : { borderColor: "#2a2633", color: "#A9A5B3" }
-                    }
-                  >
-                    {d < 60 ? `${d} min` : fmtDuration(d)}
-                  </button>
-                ))}
+              <h2 className="mt-6 text-sm font-semibold">¿A qué hora te va bien?</h2>
+              <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+                <p className="text-sm text-muted">
+                  {date ? ucfirst(DateTime.fromISO(date).setLocale("es").toFormat("cccc d 'de' LLLL")) : "Elige un día"}
+                </p>
+                <label className="block">
+                  <span className="sr-only">Zona horaria</span>
+                  <select className="field w-auto max-w-56 py-1.5 text-xs" value={tz} onChange={(e) => setTz(e.target.value)}>
+                    {timezones.map((z) => (
+                      <option key={z} value={z}>
+                        {z.replace(/_/g, " ")} ({DateTime.now().setZone(z).toFormat("ZZ")})
+                      </option>
+                    ))}
+                  </select>
+                </label>
               </div>
 
-              <h2 className="mt-7 text-sm font-semibold">¿A qué hora te va bien?</h2>
-              <p className="mt-1 text-sm text-muted">
-                {date ? ucfirst(DateTime.fromISO(date).setLocale("es").toFormat("cccc d 'de' LLLL")) : "Elige un día"}
-              </p>
-              <label className="mt-3 block">
-                <span className="sr-only">Zona horaria</span>
-                <select className="field py-2 text-xs" value={tz} onChange={(e) => setTz(e.target.value)}>
-                  {timezones.map((z) => (
-                    <option key={z} value={z}>
-                      {z.replace(/_/g, " ")} ({DateTime.now().setZone(z).toFormat("ZZ")})
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <div className="mt-4 max-h-[440px] overflow-y-auto pr-1 [scrollbar-width:thin] md:max-h-none md:min-h-0 md:flex-1">
+              <div className="mt-3 max-h-[440px] overflow-y-auto pr-1 [scrollbar-width:thin] md:max-h-none md:min-h-0 md:flex-1">
                 {error && <p className="text-sm text-accent">{error}</p>}
                 {loading && !error && (
                   <div className="grid gap-2">
