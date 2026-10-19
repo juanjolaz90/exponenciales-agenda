@@ -106,6 +106,9 @@ export async function busyTimes(user: User, from: number, to: number): Promise<I
     }),
   })) as { calendars?: Record<string, { busy?: { start: string; end: string }[] }> } | null;
   if (!data) return [];
+  // Google puede responder 200 con errores por calendario (p. ej. calendario no encontrado).
+  const failed = Object.entries(data.calendars ?? {}).find(([, c]) => (c as { errors?: unknown[] }).errors?.length);
+  if (failed) throw new Error(`freeBusy ${failed[0]}: ${JSON.stringify((failed[1] as { errors?: unknown[] }).errors)}`);
   return Object.values(data.calendars ?? {}).flatMap((c) =>
     (c.busy ?? []).map((b) => ({ start: Date.parse(b.start), end: Date.parse(b.end) })),
   );

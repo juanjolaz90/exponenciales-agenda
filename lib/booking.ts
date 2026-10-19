@@ -33,11 +33,13 @@ export async function busyFor(user: User, from: number, to: number): Promise<Int
     .select({ start: bookings.startUtc, end: bookings.endUtc })
     .from(bookings)
     .where(and(eq(bookings.userId, user.id), eq(bookings.status, "confirmed"), lt(bookings.startUtc, to), gt(bookings.endUtc, from)));
+  // Si Google está conectado y falla, NO se ofrecen horas: mejor no mostrar nada que ofrecer huecos ocupados.
   let gcal: Interval[] = [];
   try {
     gcal = await google.busyTimes(user, from, to);
   } catch (e) {
     console.error("[freeBusy]", e);
+    throw new CalendarUnavailableError();
   }
   return [...own, ...gcal];
 }
@@ -62,6 +64,13 @@ export const bookingInputSchema = z.object({
 export type BookingInput = z.infer<typeof bookingInputSchema>;
 
 export class BookingError extends Error {}
+
+/** El calendario del organizador no respondió: no se puede saber qué horas están libres. */
+export class CalendarUnavailableError extends Error {
+  constructor() {
+    super("La disponibilidad no se puede consultar ahora mismo. Inténtalo de nuevo en unos minutos.");
+  }
+}
 
 /** SQLITE_BUSY / "database is locked": otra escritura en curso. */
 function isBusy(e: unknown): boolean {

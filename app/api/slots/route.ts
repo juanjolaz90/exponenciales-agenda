@@ -3,7 +3,7 @@ import { and, eq } from "drizzle-orm";
 import { DateTime } from "luxon";
 import { getDb } from "@/lib/db";
 import { meetingTypes, users } from "@/lib/schema";
-import { availableSlots, parseType } from "@/lib/booking";
+import { availableSlots, parseType, CalendarUnavailableError } from "@/lib/booking";
 import { groupByDay } from "@/lib/availability";
 import { isValidTimeZone } from "@/lib/meeting-config";
 
@@ -28,6 +28,12 @@ export async function GET(req: NextRequest) {
 
   const from = month.startOf("month").toMillis();
   const to = month.endOf("month").toMillis() + 1;
-  const slots = await availableSlots(user, type, duration, from, to);
+  let slots: number[];
+  try {
+    slots = await availableSlots(user, type, duration, from, to);
+  } catch (e) {
+    if (e instanceof CalendarUnavailableError) return NextResponse.json({ error: e.message }, { status: 503 });
+    throw e;
+  }
   return NextResponse.json({ days: groupByDay(slots, tz) }, { headers: { "cache-control": "no-store" } });
 }

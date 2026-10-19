@@ -56,13 +56,17 @@ export function BookingWidget({ meeting }: { meeting: PublicMeeting }) {
     fetch(`/api/slots?type=${meeting.id}&duration=${duration}&tz=${encodeURIComponent(tz)}&month=${monthKey}`, {
       signal: ctrl.signal,
     })
-      .then((r) => (r.ok ? r.json() : Promise.reject(new Error())))
+      .then(async (r) => {
+        const body = await r.json().catch(() => ({}));
+        if (!r.ok) throw new Error(body.error ?? "No se pudo cargar la disponibilidad.");
+        return body;
+      })
       .then((d: { days: Record<string, number[]> }) => {
         setResult({ key: reqKey, days: d.days });
         setDate((cur) => (cur && d.days[cur] ? cur : (Object.keys(d.days).sort()[0] ?? null)));
       })
       .catch((e) => {
-        if (e?.name !== "AbortError") setResult({ key: reqKey, error: "No se pudo cargar la disponibilidad." });
+        if (e?.name !== "AbortError") setResult({ key: reqKey, error: e?.message || "No se pudo cargar la disponibilidad." });
       });
     return () => ctrl.abort();
   }, [meeting.id, duration, tz, monthKey, reqKey]);
