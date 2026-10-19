@@ -1,5 +1,6 @@
 import "server-only";
-import { createClient, type Client } from "@libsql/client";
+import type { Client } from "@libsql/client";
+import { createClient as createHttpClient } from "@libsql/client/http";
 import { drizzle } from "drizzle-orm/libsql";
 import * as schema from "./schema";
 
@@ -58,21 +59,35 @@ const SCHEMA_SQL = [
 
 function makeClient(): Client {
   if (url.startsWith("file:")) {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    // Solo en local: el cliente nativo (con binario de SQLite) se carga únicamente aquí.
+    /* eslint-disable @typescript-eslint/no-require-imports */
     const fs = require("node:fs") as typeof import("node:fs");
+    const { createClient } = require("@libsql/client") as typeof import("@libsql/client");
+    /* eslint-enable @typescript-eslint/no-require-imports */
     fs.mkdirSync("./data", { recursive: true });
+    return createClient({ url });
   }
-  return createClient({ url, authToken: process.env.DATABASE_AUTH_TOKEN });
+  // Turso / servidor remoto: cliente HTTP 100 % JavaScript, ideal para funciones serverless.
+  return createHttpClient({
+    url: url.replace(/^libsql:\/\//, "https://"),
+    authToken: process.env.DATABASE_AUTH_TOKEN,
+  });
 }
 
-const g = globalThis as unknown as { __agendaClient?: Client; __agendaReady?: Promise<void> };
-const client = (g.__agendaClient ??= makeClient());
-g.__agendaReady ??= client.batch(SCHEMA_SQL, "write").then(() => undefined);
+type Db = ReturnType<typeof drizzle<typeof schema, Client>>;
+const g = globalThis as unknown as { __agendaDb?: Promise<Db> };
 
-const _db = drizzle(client, { schema });
+async function init(): Promise<Db> {
+  const client = makeClient();
+  await client.batch(SCHEMA_SQL, "write");
+  return drizzle(client, { schema });
+}
 
-/** Devuelve la base de datos con el esquema ya creado. */
-export async function getDb() {
-  await g.__agendaReady;
-  return _db;
+/** Devuelve la base de datos con el esquema ya creado. Se conecta en la primera petición, no al compilar. */
+export function getDb(): Promise<Db> {
+  g.__agendaDb ??= init().catch((e) => {
+    g.__agendaDb = undefined; // reintenta en la siguiente petición
+    throw e;
+  });
+  return g.__agendaDb;
 }

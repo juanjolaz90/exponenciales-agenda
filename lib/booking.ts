@@ -5,7 +5,7 @@ import { z } from "zod";
 import { getDb } from "./db";
 import { bookings, meetingTypes, users, type Booking, type MeetingTypeRow, type User } from "./schema";
 import { meetingConfigSchema, LOCATION_LABEL, type MeetingConfig } from "./meeting-config";
-import { computeSlots, type Interval } from "./availability";
+import { computeSlots, meetingGap, type Interval } from "./availability";
 import { newId } from "./crypto";
 import * as google from "./google";
 import * as hubspot from "./hubspot";
@@ -63,6 +63,14 @@ export type BookingInput = z.infer<typeof bookingInputSchema>;
 
 export class BookingError extends Error {}
 
+/** SQLITE_BUSY / "database is locked": otra escritura en curso. */
+function isBusy(e: unknown): boolean {
+  for (let x = e as { message?: string; code?: string; cause?: unknown } | undefined; x; x = x.cause as typeof x) {
+    if (x.code === "SQLITE_BUSY" || /SQLITE_BUSY|database is locked/i.test(x.message ?? "")) return true;
+  }
+  return false;
+}
+
 export async function createBooking(input: BookingInput): Promise<Booking> {
   const db = await getDb();
   const row = await db.query.meetingTypes.findFirst({
@@ -110,23 +118,33 @@ export async function createBooking(input: BookingInput): Promise<Booking> {
   };
 
   // Inserción atómica: rechaza si otra reserva se solapa (doble clic o dos visitantes a la vez).
-  const pad = { before: c.bufferBefore * 60_000, after: c.bufferAfter * 60_000 };
-  await db.transaction(async (tx) => {
-    const clash = await tx
-      .select({ id: bookings.id })
-      .from(bookings)
-      .where(
-        and(
-          eq(bookings.userId, user.id),
-          eq(bookings.status, "confirmed"),
-          lt(bookings.startUtc, end + pad.after),
-          gt(bookings.endUtc, input.start - pad.before),
-        ),
-      )
-      .limit(1);
-    if (clash.length) throw new BookingError("Esa hora ya no está disponible. Elige otra, por favor.");
-    await tx.insert(bookings).values(booking);
-  });
+  // Si dos visitantes reservan a la vez, la base de datos serializa las escrituras: reintentamos
+  // y la segunda transacción ve la primera reserva y se rechaza con un mensaje claro.
+  const gap = meetingGap(c) * 60_000;
+  for (let attempt = 1; ; attempt++) {
+    try {
+      await db.transaction(async (tx) => {
+        const clash = await tx
+          .select({ id: bookings.id })
+          .from(bookings)
+          .where(
+            and(
+              eq(bookings.userId, user.id),
+              eq(bookings.status, "confirmed"),
+              lt(bookings.startUtc, end + gap),
+              gt(bookings.endUtc, input.start - gap),
+            ),
+          )
+          .limit(1);
+        if (clash.length) throw new BookingError("Esa hora ya no está disponible. Elige otra, por favor.");
+        await tx.insert(bookings).values(booking);
+      });
+      break;
+    } catch (e) {
+      if (e instanceof BookingError || attempt >= 5 || !isBusy(e)) throw e;
+      await new Promise((r) => setTimeout(r, 150 * attempt + Math.random() * 100));
+    }
+  }
 
   await syncIntegrations(user, type, booking);
   return (await db.query.bookings.findFirst({ where: eq(bookings.id, booking.id) }))!;

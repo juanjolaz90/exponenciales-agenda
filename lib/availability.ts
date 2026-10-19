@@ -5,7 +5,11 @@ export type Interval = { start: number; end: number }; // epoch ms UTC
 
 const MIN = 60_000;
 
-const overlaps = (a: Interval, b: Interval) => a.start < b.end && b.start < a.end;
+/** Minutos libres exigidos entre esta reunión y cualquier otra. */
+export const meetingGap = (c: Pick<MeetingConfig, "bufferBefore" | "bufferAfter">) =>
+  Math.max(c.bufferBefore, c.bufferAfter);
+
+const overlaps =(a: Interval, b: Interval) => a.start < b.end && b.start < a.end;
 
 /**
  * Calcula las horas de inicio libres (epoch ms) entre `from` y `to`.
@@ -41,10 +45,9 @@ export function computeSlots(opts: {
       for (let t = winStart; t.toMillis() + duration * MIN <= winEnd; t = t.plus({ minutes: config.increment })) {
         const start = t.toMillis();
         if (start < earliest || start < from || start >= to || start >= latest) continue;
-        const blocked: Interval = {
-          start: start - config.bufferBefore * MIN,
-          end: start + (duration + config.bufferAfter) * MIN,
-        };
+        // Hueco mínimo entre reuniones en ambos sentidos (también tras una reunión ya existente).
+        const gap = meetingGap(config) * MIN;
+        const blocked: Interval = { start: start - gap, end: start + duration * MIN + gap };
         if (busy.some((b) => overlaps(blocked, b))) continue;
         out.push(start);
       }
