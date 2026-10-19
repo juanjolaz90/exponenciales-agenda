@@ -1,5 +1,7 @@
 # Exponenciales Agenda
 
+**En producción:** [exponenciales-agenda.vercel.app](https://exponenciales-agenda.vercel.app) · Next.js 16 · Turso · Vercel
+
 Sistema de reservas propio, como HubSpot Meetings, con la marca de Exponenciales.
 - **Panel `/app`**: creas y configuras las agendas (duraciones, horario semanal, márgenes, antelación,
   ventana de reserva, invitados, preguntas, ubicación, color, mensaje y sincronización con HubSpot).
